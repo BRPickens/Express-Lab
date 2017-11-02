@@ -6,15 +6,18 @@ let bodyParser = require('body-parser');
 let fs = require('fs');
 const base = '/api/chirps'
 let pathVar = path.join(__dirname, 'data.json')
-const shortid_1 = function (req, res, next) {
-    req.shortid_1.generate()
+const randID = function(req, res, next) {
+    return shortid_1.generate();
+    next();
 }
+
 app
 .disable('x-powered-by')
 .use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET, POST, UPDATE, DELETE");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.setHeader('Content-Type', 'application/json');
     next();
 });
 
@@ -39,17 +42,38 @@ app.post(base, function (req, res) {
     fs.readFile(pathVar, 'utf-8', function(err, f) {
         var fp = JSON.parse(f);
         var c = req.body;
-        var id = shortid_1.generate();
+        var id = randID();
         c.id = id;
         fp.push(c);
         fs.writeFile(pathVar, JSON.stringify(fp), function (err) {
             if (err)
                 throw err;
             res.status(201).send(id).end();
-        })
-    })
-})
-
+        });
+    });
+});
+app.delete(base + "/:id", function (req, res) {
+    fs.readFile(pathVar, 'utf-8', function (err, f) {
+        var fp = JSON.parse(f);
+        var foundIndex = -1;
+        fp.map(function (chirp, i) {
+            if (chirp.id === req.params.id) {
+                foundIndex = i;
+            }
+        });
+        if (foundIndex === -1) {
+            res.status(404).end();
+            return;
+        }
+        fp.splice(foundIndex, 1);
+        fs.writeFile(dataPath, JSON.stringify(fp), 'utf-8', function (err) {
+            if (err)
+                throw err;
+            console.error(err);
+            res.status(202).end();
+        });
+    });
+});
 
 
 
